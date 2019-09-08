@@ -1,15 +1,17 @@
-//
-//  main.c
-//  Test project
-//
-//  Created by George Jerman on 08/09/2019.
-//  Copyright © 2019 George Jerman. All rights reserved.
-//
-
 #include <stdio.h>
+#include <math.h>
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
-    printf("Hello, World!\n");
+int main()
+{
+    printf("Hello World\n");
+    
+    float x;
+    float y;
+    float z;
+    printf("What would you like to add together? \n");
+    scanf("%f", &y);
+    scanf("%f", &z);
+    x = y + z;
+    printf("The answer is %f \n" , x);
     return 0;
 }
