@@ -1,10 +1,10 @@
-#include stdio.h
-#include math.h
+#include <stdio.h>
+#includ e< math.h>
 
-void main()
+int main()
 {
-	printf("Hello World")
-	return
+	printf("Hello World");
+	return 0;
 }
 
 
