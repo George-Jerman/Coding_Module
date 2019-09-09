@@ -14,7 +14,7 @@ int main()
 {
     int input_choice;
     printf("What would you like to convert? \n");
-    printf("1. Farenheit to Celsius \n 2. Celsius to Farenheit \n 3. Pounds to Kilograms \n 4. Kilograms to Pounds \n ");
+    printf(" 1. Farenheit to Celsius \n 2. Celsius to Farenheit \n 3. Pounds to Kilograms \n 4. Kilograms to Pounds \n 0. Exit \n");
     scanf("%d", &input_choice );
     switch (input_choice) {
         case 1:
@@ -29,6 +29,9 @@ int main()
         case 4:
             Mass_kp();
             break;
+		case 0:
+			printf("You have exited the program \n");
+			return 0;
         default:
             return 1;
             break;
