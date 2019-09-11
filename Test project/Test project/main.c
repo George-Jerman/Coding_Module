@@ -1,44 +1,100 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 /* Program to do simple unit conversions from a list given */
 
-//function declarations
-float Temp_fc(void);
-float Temp_cf(void);
-float Mass_pk(void);
-float Mass_kp(void);
 
+//matrices structure definitions
+typedef struct Matrix
+{
+	int elementA[3][3];
+	int elementB[3][3];
+	int elementC[3][3];
+} Matrix;
+
+
+//function declarations
+
+int conversion(void);
+int matrix_multiplier(Matrix *p);
+int Temp_fc(void);
+int Temp_cf(void);
+int Mass_pk(void);
+int Mass_kp(void);
 
 int main()
 {
-    int input_choice;
-    printf("What would you like to convert? \n");
-    printf(" 1. Farenheit to Celsius \n 2. Celsius to Farenheit \n 3. Pounds to Kilograms \n 4. Kilograms to Pounds \n 0. Exit \n");
-    scanf("%d", &input_choice );
-    switch (input_choice) {
-        case 1:
-            Temp_fc();
-            break;
-        case 2:
-            Temp_cf();
-            break;
-        case 3:
-            Mass_pk();
-            break;
-        case 4:
-            Mass_kp();
-            break;
+	
+	
+	Matrix *p = NULL;
+	p = malloc(sizeof *p);
+	if (p == NULL)
+	{
+		fprintf(stderr, "Out of memory!\n");
+		exit(99);
+	}
+	int s = 1;
+	printf("1. Matrix multiplier or 2. converter? \n");
+	scanf("%d", &s);
+	switch (s) {
+		case 1:
+			conversion();
+			break;
+		case 2:
+			matrix_multiplier(p);
+			break;
+		default:
+			break;
+	}
+	return 0;
+}
+
+
+//functions
+
+int conversion()
+{
+
+int carryon = 1;
+int input_choice;
+//switch to select category of conversion with an exit/continuation condition
+
+while (carryon == 1) {
+	printf("What would you like to convert? \n");
+	printf(" 1. Farenheit to Celsius \n 2. Celsius to Farenheit \n 3. Pounds to Kilograms \n 4. Kilograms to Pounds \n 0. Exit \n");
+	scanf("%d", &input_choice );
+	
+
+	switch (input_choice) {
+		case 1:
+			Temp_fc();
+			break;
+		case 2:
+			Temp_cf();
+			break;
+		case 3:
+			Mass_pk();
+			break;
+		case 4:
+			Mass_kp();
+			break;
 		case 0:
 			printf("You have exited the program \n");
 			return 0;
-        default:
-            return 1;
-            break;
-    }
+		default:
+			return 1;
+			break;
+	}
+	printf("would you like to convert another value? Press 1 if so or press 0 to quit. \n");
+	scanf("%d", &carryon);
 }
+	return 0;
+}
+
+
 //farenheit to celsius
-float Temp_fc()
+int Temp_fc()
 {
     float tbc;
     float converted_val;
@@ -50,7 +106,7 @@ float Temp_fc()
     
 }
 //celsius to farenheit
-float Temp_cf()
+int Temp_cf()
 {
     float tbc;
     float converted_val;
@@ -62,7 +118,7 @@ float Temp_cf()
     
 }
 //pounds to kilos
-float Mass_pk()
+int Mass_pk()
 {
     float tbc;
     float converted_val;
@@ -74,7 +130,7 @@ float Mass_pk()
     
 }
 //kilos to pounds
-float Mass_kp()
+int Mass_kp()
 {
     float tbc;
     float converted_val;
@@ -84,4 +140,47 @@ float Mass_kp()
     printf("Your value is %f \n", converted_val);
     return 0;
     
+}
+
+
+int matrix_multiplier(Matrix *p)
+{
+	int i,j;
+	//multiplying the matrices
+	
+	p->elementA[0][0] = 1;
+	p->elementA[0][1] = 0;
+	p->elementA[0][2] = 0;
+	p->elementA[1][0] = 0;
+	p->elementA[1][1] = 1;
+	p->elementA[1][2] = 0;
+	p->elementA[2][0] = 0;
+	p->elementA[2][1] = 0;
+	p->elementA[2][2] = 1;
+	
+	p->elementB[0][0] = 1;
+	p->elementB[0][1] = 0;
+	p->elementB[0][2] = 0;
+	p->elementB[1][0] = 0;
+	p->elementB[1][1] = 1;
+	p->elementB[1][2] = 0;
+	p->elementB[2][0] = 0;
+	p->elementB[2][1] = 0;
+	p->elementB[2][2] = 1;
+
+	
+	
+	for (i=0; i<3; i++) {
+		for (j=0; j<3; j++) {
+			p->elementC[i][j] = p->elementA[i][j] * p->elementB[i][j];
+		}
+	}
+	
+	for (i=0; i<3; i++) {
+		for (j=0; j<3; j++) {
+			printf("%d \t", p->elementC[i][j]);
+		}
+		printf("\n");
+	}
+	return 0;
 }
