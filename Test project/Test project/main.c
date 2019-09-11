@@ -8,9 +8,9 @@
 //matrices structure definitions
 typedef struct Matrix
 {
-	int elementA[3][3];
-	int elementB[3][3];
-	int elementC[3][3];
+	float elementA[3][3];
+	float elementB[3][3];
+	float elementC[3][3];
 } Matrix;
 
 
@@ -42,10 +42,10 @@ int main()
 	scanf("%d", &s);
 	switch (s) {
 		case 1:
-			conversion();
+			matrix_multiplier(p);
 			break;
 		case 2:
-			matrix_multiplier(p);
+			conversion();
 			break;
 		default:
 			break;
@@ -145,31 +145,7 @@ int Mass_kp()
     
 }
 
-
-int matrix_multiplier(Matrix *p)
-{
-	int i,j;
-	//multiplying the matrices
-	
-	fileA(p);
-	fileB(p);
-	
-	for (i=0; i<3; i++) {
-		for (j=0; j<3; j++) {
-			p->elementC[i][j] = p->elementA[i][j] + p->elementB[i][j];
-		}
-	}
-	
-	for (i=0; i<3; i++) {
-		for (j=0; j<3; j++) {
-			printf("%d \t", p->elementC[i][j]);
-		}
-		printf("\n");
-	}
-	return 0;
-}
-
-
+//reads in file matrixA.txt for matrixA
 void fileA(Matrix *p)
 {
 	int x,y;
@@ -183,13 +159,13 @@ void fileA(Matrix *p)
 	for (x =0; x < 3; x++) {
 		for(y = 0; y < 3; y++)
 		{
-			fscanf(matrixA, "%d", &p->elementA[x][y]);
+			fscanf(matrixA, "%f", &p->elementA[x][y]);
 		}
 	}
 	fclose(matrixA);
 }
 
-
+//reads in file matrixB.txt for matrixB2
 void fileB(Matrix *p)
 {
 	int x,y;
@@ -203,7 +179,37 @@ void fileB(Matrix *p)
 	for (x =0; x < 3; x++) {
 		for(y = 0; y < 3; y++)
 		{
-			fscanf(matrixB, "%d", &p->elementB[x][y]);
+			fscanf(matrixB, "%f", &p->elementB[x][y]);
 		}
 	}fclose(matrixB);
 }
+//matrix multiplication funciton making use of the matrix structure defined above
+int matrix_multiplier(Matrix *p)
+{
+	int i,j,k;
+	int sum = 0;
+	//multiplying the matrices
+	
+	fileA(p);
+	fileB(p);
+	
+	for (i=0; i<3; i++) {
+		for (j=0; j<3; j++) {
+			for (k=0; k<3; k++) {
+				sum = sum + p->elementA[i][k]*p->elementB[k][j];
+			}
+			p->elementC[i][j] = sum;
+			sum =0;
+		}
+	}
+	
+	for (i=0; i<3; i++) {
+		for (j=0; j<3; j++) {
+			printf("%f \t", p->elementC[i][j]);
+		}
+		printf("\n");
+	}
+	return 0;
+}
+
+
