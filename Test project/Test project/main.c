@@ -156,7 +156,7 @@ int matrix_multiplier(Matrix *p)
 	
 	for (i=0; i<3; i++) {
 		for (j=0; j<3; j++) {
-			p->elementC[i][j] = p->elementA[i][j] * p->elementB[i][j];
+			p->elementC[i][j] = p->elementA[i][j] + p->elementB[i][j];
 		}
 	}
 	
@@ -186,6 +186,7 @@ void fileA(Matrix *p)
 			fscanf(matrixA, "%d", &p->elementA[x][y]);
 		}
 	}
+	fclose(matrixA);
 }
 
 
@@ -204,5 +205,5 @@ void fileB(Matrix *p)
 		{
 			fscanf(matrixB, "%d", &p->elementB[x][y]);
 		}
-	}
+	}fclose(matrixB);
 }
