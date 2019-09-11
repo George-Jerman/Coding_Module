@@ -22,6 +22,9 @@ int Temp_fc(void);
 int Temp_cf(void);
 int Mass_pk(void);
 int Mass_kp(void);
+void fileA(Matrix *p);
+void fileB(Matrix *p);
+
 
 int main()
 {
@@ -148,27 +151,8 @@ int matrix_multiplier(Matrix *p)
 	int i,j;
 	//multiplying the matrices
 	
-	p->elementA[0][0] = 1;
-	p->elementA[0][1] = 0;
-	p->elementA[0][2] = 0;
-	p->elementA[1][0] = 0;
-	p->elementA[1][1] = 1;
-	p->elementA[1][2] = 0;
-	p->elementA[2][0] = 0;
-	p->elementA[2][1] = 0;
-	p->elementA[2][2] = 1;
-	
-	p->elementB[0][0] = 1;
-	p->elementB[0][1] = 0;
-	p->elementB[0][2] = 0;
-	p->elementB[1][0] = 0;
-	p->elementB[1][1] = 1;
-	p->elementB[1][2] = 0;
-	p->elementB[2][0] = 0;
-	p->elementB[2][1] = 0;
-	p->elementB[2][2] = 1;
-
-	
+	fileA(p);
+	fileB(p);
 	
 	for (i=0; i<3; i++) {
 		for (j=0; j<3; j++) {
@@ -183,4 +167,42 @@ int matrix_multiplier(Matrix *p)
 		printf("\n");
 	}
 	return 0;
+}
+
+
+void fileA(Matrix *p)
+{
+	int x,y;
+	FILE *matrixA;
+	matrixA = fopen("matrixA.txt", "r");
+	
+	if (matrixA == NULL) {
+		perror("fopen");
+		exit(1);
+	}
+	for (x =0; x < 3; x++) {
+		for(y = 0; y < 3; y++)
+		{
+			fscanf(matrixA, "%d", &p->elementA[x][y]);
+		}
+	}
+}
+
+
+void fileB(Matrix *p)
+{
+	int x,y;
+	FILE *matrixB;
+	matrixB = fopen("matrixB.txt", "r");
+	
+	if (matrixB == NULL) {
+		perror("fopen");
+		exit(1);
+	}
+	for (x =0; x < 3; x++) {
+		for(y = 0; y < 3; y++)
+		{
+			fscanf(matrixB, "%d", &p->elementB[x][y]);
+		}
+	}
 }
