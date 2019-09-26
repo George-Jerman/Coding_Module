@@ -2,15 +2,17 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define MATRIX_SIZE 3
+
 /* Program to do simple unit conversions from a list given */
 
 
 //matrices structure definitions
 typedef struct Matrix
 {
-	float elementA[3][3];
-	float elementB[3][3];
-	float elementC[3][3];
+	float elementA[MATRIX_SIZE][MATRIX_SIZE];
+	float elementB[MATRIX_SIZE][MATRIX_SIZE];
+	float elementC[MATRIX_SIZE][MATRIX_SIZE];
 } Matrix;
 
 
@@ -193,9 +195,9 @@ int matrix_multiplier(Matrix *p)
 	fileA(p);
 	fileB(p);
 	
-	for (i=0; i<3; i++) {
-		for (j=0; j<3; j++) {
-			for (k=0; k<3; k++) {
+	for (i=0; i<MATRIX_SIZE; i++) {
+		for (j=0; j<MATRIX_SIZE; j++) {
+			for (k=0; k<MATRIX_SIZE; k++) {
 				sum = sum + p->elementA[i][k]*p->elementB[k][j];
 			}
 			p->elementC[i][j] = sum;
@@ -203,9 +205,9 @@ int matrix_multiplier(Matrix *p)
 		}
 	}
 	
-	for (i=0; i<3; i++) {
-		for (j=0; j<3; j++) {
-			printf("%f \t", p->elementC[i][j]);
+	for (i=0; i<MATRIX_SIZE; i++) {
+		for (j=0; j<MATRIX_SIZE; j++) {
+			printf("%.2f \t", p->elementC[i][j]);
 		}
 		printf("\n");
 	}
