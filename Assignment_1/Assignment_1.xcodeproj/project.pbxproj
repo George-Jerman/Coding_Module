@@ -23,6 +23,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5E07356E235EE9DE0082EB5E /* mat1big.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mat1big.txt; sourceTree = "<group>"; };
+		5E07356F235EE9DE0082EB5E /* mat2big.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mat2big.txt; sourceTree = "<group>"; };
+		5E073570235EF4770082EB5E /* mat2_3_4.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat2_3_4.txt; path = Resources/mat2_3_4.txt; sourceTree = SOURCE_ROOT; };
+		5E073571235EF4770082EB5E /* mat2_300_400.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat2_300_400.txt; path = Resources/mat2_300_400.txt; sourceTree = SOURCE_ROOT; };
+		5E073572235EF4770082EB5E /* mat1big.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1big.txt; path = Resources/mat1big.txt; sourceTree = SOURCE_ROOT; };
+		5E073573235EF4770082EB5E /* mat2_3000_4000.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat2_3000_4000.txt; path = Resources/mat2_3000_4000.txt; sourceTree = SOURCE_ROOT; };
+		5E073574235EF4770082EB5E /* mat1.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1.txt; path = Resources/mat1.txt; sourceTree = SOURCE_ROOT; };
+		5E073575235EF4770082EB5E /* mat1_400_300.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_400_300.txt; path = Resources/mat1_400_300.txt; sourceTree = SOURCE_ROOT; };
+		5E073576235EF4770082EB5E /* mat1bigfn.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1bigfn.txt; path = Resources/mat1bigfn.txt; sourceTree = SOURCE_ROOT; };
+		5E073577235EF4770082EB5E /* mat1_40000_30000.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_40000_30000.txt; path = Resources/mat1_40000_30000.txt; sourceTree = SOURCE_ROOT; };
+		5E073578235EF4770082EB5E /* mat1_4000_3000.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_4000_3000.txt; path = Resources/mat1_4000_3000.txt; sourceTree = SOURCE_ROOT; };
+		5E073579235EF4770082EB5E /* mat1_4_3.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_4_3.txt; path = Resources/mat1_4_3.txt; sourceTree = SOURCE_ROOT; };
+		5E07357A235EF4770082EB5E /* mat1bigf.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1bigf.txt; path = Resources/mat1bigf.txt; sourceTree = SOURCE_ROOT; };
 		5E1066622354A95C00869739 /* Assignment_1 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Assignment_1; sourceTree = BUILT_PRODUCTS_DIR; };
 		5E1066652354A95C00869739 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; tabWidth = 4; usesTabs = 0; };
 		5E1352D92357AC4700B5018A /* input.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = input.txt; sourceTree = "<group>"; };
@@ -59,9 +72,22 @@
 		5E1066642354A95C00869739 /* Assignment_1 */ = {
 			isa = PBXGroup;
 			children = (
+				5E073579235EF4770082EB5E /* mat1_4_3.txt */,
+				5E073575235EF4770082EB5E /* mat1_400_300.txt */,
+				5E073578235EF4770082EB5E /* mat1_4000_3000.txt */,
+				5E073577235EF4770082EB5E /* mat1_40000_30000.txt */,
+				5E073574235EF4770082EB5E /* mat1.txt */,
+				5E07356E235EE9DE0082EB5E /* mat1big.txt */,
+				5E07356F235EE9DE0082EB5E /* mat2big.txt */,
 				5E1352D92357AC4700B5018A /* input.txt */,
 				5E1352DA2357AC4700B5018A /* input1.txt */,
 				5E1066652354A95C00869739 /* main.c */,
+				5E073572235EF4770082EB5E /* mat1big.txt */,
+				5E07357A235EF4770082EB5E /* mat1bigf.txt */,
+				5E073576235EF4770082EB5E /* mat1bigfn.txt */,
+				5E073570235EF4770082EB5E /* mat2_3_4.txt */,
+				5E073571235EF4770082EB5E /* mat2_300_400.txt */,
+				5E073573235EF4770082EB5E /* mat2_3000_4000.txt */,
 			);
 			path = Assignment_1;
 			sourceTree = "<group>";

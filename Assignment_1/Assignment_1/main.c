@@ -1,9 +1,10 @@
 //
 //  main.c
 //  Assignment_1
-//
+//  Version 0.4
+//  Changed arrays to a more efficient method
 //  Created by George Jerman on 14/10/2019.
-//  Copyright © 2019 George Jerman. All rights reserved.
+//  General command line argument code taken from mat_gen.c from C.D.H.Williams and adapted.
 //
 
 #include <stdio.h>
@@ -25,20 +26,21 @@ typedef enum {
     BAD_FILENAME = 3,
     NO_MATRIX_2 = 4,
     BAD_FORMAT = 5,
+    INCOMPATIBLE_MATRICES =6,
     UNKNOWN_ERROR = -1
 } Error;
 
 
 static void matrix1_size(FILE * matrix_1, int *rows, int *columns);
 static void matrix2_size(FILE * matrix_2, int *rows2, int *columns2);
-double ** CreateArray1(int rows, int columns);
-double** CreateArray2(int rows2, int columns2);
-double** Populate_mat1(double** mat1_placeholder, FILE *matrix_1,int rows,int columns);
-double** Populate_mat2(double** mat2_placeholder, FILE *matrix_2,int rows2,int columns2);
-static Error frobenius_norm(double ** mat1, int rows, int columns);
-static Error transpose(void);
-static Error matrix_product(void);
-static Error determinant(void);
+double* CreateArray1(int rows, int columns);
+double* CreateArray2(int rows2, int columns2);
+double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns);
+double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2);
+static Error frobenius_norm(double* mat1, int rows, int columns);
+static Error transpose(double* mat1, int columns, int rows);
+static Error matrix_product(double *mat1, double* mat2, int rows, int columns, int rows2, int columns2);
+static Error determinant(double * mat1, int rows, int columns);
 static Error adjoint(void);
 static Error inverse(void);
 
@@ -69,7 +71,7 @@ int main(int argc, char ** argv)
     /* getopt_long needs somewhere to store its option index. */
     int option_index = 0;
         
-    int c = getopt_long( argc, argv, ":z:x:ftm:d:a:i:", long_options, &option_index );
+    int c = getopt_long( argc, argv, ":z:x:ftmd:a:i:", long_options, &option_index );
     /* End of options is signalled with '-1' */
     while (c != -1) {
         switch (c) {
@@ -80,10 +82,8 @@ int main(int argc, char ** argv)
                     return BAD_FILENAME;
                 }
                 matrix1_size(matrix_1, &rows, &columns);
-                double **mat1_placeholder =CreateArray1(rows, columns);
-                printf("Matrix1\n");
-                double **mat1 =Populate_mat1(mat1_placeholder, matrix_1, rows, columns);
-                free(mat1_placeholder);
+                double *mat1=CreateArray1(rows, columns);
+                mat1 =Populate_mat1(mat1, matrix_1, rows, columns);
                 break;
             case 'x': //when file2 is specified creates an array from the data in input file specified
                 input_file_name_2 = optarg;
@@ -92,10 +92,8 @@ int main(int argc, char ** argv)
                     return BAD_FILENAME;
                 }
                 matrix2_size(matrix_2, &rows2, &columns2);
-                double **mat2_placeholder =CreateArray2(rows2, columns2);
-                printf("Matrix2\n");
-                double **mat2 =Populate_mat2(mat2_placeholder, matrix_2, rows2, columns2);
-                free(mat2_placeholder);
+                double *mat2 =CreateArray2(rows2, columns2);
+                mat2 =Populate_mat2(mat2, matrix_2, rows2, columns2);
                 break;
             case 'f':
                 if (rows ==0 || columns ==0) {
@@ -103,15 +101,17 @@ int main(int argc, char ** argv)
                     return BAD_FORMAT;
                 }
                 return frobenius_norm(mat1, rows, columns);
+
                 break;
             case 't':
-                ret_val = transpose();
+                return transpose(mat1, rows, columns);
                 break;
             case 'm':
-                ret_val = matrix_product();
+                matrix_product(mat1, mat2, rows, rows2, columns, columns2);
+                return NO_ERROR;
                 break;
             case 'd':
-                ret_val = determinant();
+                ret_val = determinant(mat1, rows, columns);
                 break;
             case 'a':
                 ret_val = adjoint();
@@ -130,7 +130,7 @@ int main(int argc, char ** argv)
                 fprintf(stderr, "Warning: option '-%c' is invalid: ignored\n", optopt);
                 break;
         }
-        c = getopt_long( argc, argv, ":z:x:ft:m:d:a:i:", long_options, &option_index );
+        c = getopt_long( argc, argv, ":z:x:ftmd:a:i:", long_options, &option_index );
     }
     return NO_ERROR;
 }
@@ -198,27 +198,19 @@ static void matrix2_size(FILE * matrix_2, int *rows2, int *columns2)
     fseek(matrix_2, 0, SEEK_SET);
 }
 
-double** CreateArray1(int rows, int columns)
+double* CreateArray1(int rows, int columns)
 {
-    int i;
-    double**mat1 = (double**) malloc(sizeof(int*)*rows);
-    for (i=0; i<rows; i++) {
-        mat1[i] = (double*) malloc(sizeof(int*)*columns);
-    }
+    double *mat1 = malloc(sizeof(double)*rows*columns);
     return mat1;
 }
 
-double** CreateArray2(int rows2, int columns2)
+double* CreateArray2(int rows2, int columns2)
 {
-    int i;
-    double**mat2_placeholder = (double**) malloc(sizeof(int*)*rows2);
-    for (i=0; i<rows2; i++) {
-        mat2_placeholder[i] = (double*) malloc(sizeof(int*)*columns2);
-    }
-    return mat2_placeholder;
+    double *mat2 = malloc(sizeof(double)*rows2*columns2);
+    return mat2;
 }
 
-double** Populate_mat1(double** mat1_placeholder, FILE *matrix_1,int rows,int columns )
+double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns )
 {
     int i,j,f;
     
@@ -244,19 +236,19 @@ double** Populate_mat1(double** mat1_placeholder, FILE *matrix_1,int rows,int co
     }
     for (i=0; i<rows; i++) {
         for (j=0; j<columns; j++) {
-            f = fscanf(matrix_1, "%lg", &mat1_placeholder[i][j]);
+            f = fscanf(matrix_1, "%lg", &mat1[i*columns+j]);
             if (f != 1) {
                 exit(BAD_FORMAT);
             }
-            printf("%.13lg\t", mat1_placeholder[i][j]);
+            //printf("%.13lg\t", mat1[i*columns+j]);
         }
-        printf("\n");
+        //printf("\n");
     }
     fclose(matrix_1);
-    return mat1_placeholder;
+    return mat1;
 }
 
-double** Populate_mat2(double** mat2_placeholder, FILE *matrix_2,int rows2,int columns2)
+double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2)
 {
     int i,j,f;
     
@@ -282,45 +274,87 @@ double** Populate_mat2(double** mat2_placeholder, FILE *matrix_2,int rows2,int c
     }
     for (i=0; i<rows2; i++) {
         for (j=0; j<columns2; j++) {
-            f = fscanf(matrix_2, "%lg", &mat2_placeholder[i][j]);
+            f = fscanf(matrix_2, "%lg", &mat2[i*columns2+j]);
             if (f != 1) {
                 exit(BAD_FORMAT);
             }
-            printf("%.13g\t", mat2_placeholder[i][j]);
+            //printf("%.13g\t", mat2[i*columns2+j]);
         }
-        printf("\n");
+        //printf("\n");
     }
     fclose(matrix_2);
-    return mat2_placeholder;
+    return mat2;
 }
 
-static Error frobenius_norm(double ** mat1, int rows, int columns)
+static Error frobenius_norm(double * mat1, int rows, int columns)
 {
     int i,j;
     double element=0,sum=0;
     for (i=0; i<rows; i++) {
         for (j=0; j<columns; j++) {
-            element = pow(mat1[i][j], 2);
+            element = pow(mat1[i*columns+j], 2);
             sum += element;
         }
     }
     sum = sqrt(sum);
     printf("The frobenius norm of the matrix is: %.13lg\n", sum);
+    free(mat1);
     return NO_ERROR;
 }
 
-static Error transpose(void)
+static Error transpose(double *mat1, int rows, int columns)
 {
+    printf("\n");
+    int i,j;
+    //define transpose array
+    double *mat_Transpose = malloc(sizeof(double)*columns*rows);
+    for (i=0; i<rows; i++) {
+        for (j=0; j<columns; j++) {
+            mat_Transpose[(j*rows)+i] = mat1[(i*columns)+j];
+        }
+    }
+    free(mat1);
+    for (i=0; i<columns; i++) {
+        for (j=0; j<rows; j++) {
+            printf("%lg\t", mat_Transpose[i*rows +j]);
+        }
+        printf("\n");
+    }
     return NO_ERROR;
 }
 
-static Error matrix_product(void)
+static Error matrix_product(double *mat1, double* mat2, int rows, int columns, int rows2, int columns2)
 {
-    return NO_ERROR;
+    FILE * destination =fopen("output.txt", "w");
+    //chcking if multiplication is possible
+    if (columns != rows2) {
+        exit(INCOMPATIBLE_MATRICES);
+    }
+    double *mat_multiplied = malloc(sizeof(double)*columns2*rows);
+    int i,j,k;
+    for (i = 0; i < rows; i++) {
+        for (j = 0; j < columns2; j++) {
+            for (k = 0; k < columns; k++) {
+                mat_multiplied[(i*columns)+j] += mat1[(i*columns)+k] * mat2[(k*columns2)+j];
+            }
+                
+            printf("%.18lg\t", mat_multiplied[i*columns+j]);
+        }
+        printf("\n");
+    }
+    free(mat1);
+    free(mat2);
+    free(mat_multiplied);
+
+    fclose(destination);
+    return 0;
 }
 
-static Error determinant(void)
+static Error determinant(double * mat1, int rows, int columns)
 {
+    if (rows != columns) {
+        exit(INCOMPATIBLE_MATRICES);
+    }
     return NO_ERROR;
 }
 
