@@ -40,6 +40,9 @@
 		5E1066652354A95C00869739 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; tabWidth = 4; usesTabs = 0; };
 		5E1352D92357AC4700B5018A /* input.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = input.txt; sourceTree = "<group>"; };
 		5E1352DA2357AC4700B5018A /* input1.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = input1.txt; sourceTree = "<group>"; };
+		5E33810E2361D5B000CD8CC8 /* mat1_4_4.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mat1_4_4.txt; sourceTree = "<group>"; };
+		5E807E5E235F9DAE0066FCE2 /* mat1_3_3.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_3_3.txt; path = Resources/mat1_3_3.txt; sourceTree = SOURCE_ROOT; };
+		5E807E5F236094760066FCE2 /* mat1_10_10.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mat1_10_10.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +75,9 @@
 		5E1066642354A95C00869739 /* Assignment_1 */ = {
 			isa = PBXGroup;
 			children = (
+				5E33810E2361D5B000CD8CC8 /* mat1_4_4.txt */,
+				5E807E5F236094760066FCE2 /* mat1_10_10.txt */,
+				5E807E5E235F9DAE0066FCE2 /* mat1_3_3.txt */,
 				5E073579235EF4770082EB5E /* mat1_4_3.txt */,
 				5E073575235EF4770082EB5E /* mat1_400_300.txt */,
 				5E073578235EF4770082EB5E /* mat1_4000_3000.txt */,
