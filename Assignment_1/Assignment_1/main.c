@@ -1,10 +1,20 @@
 //
 //  main.c
 //  Assignment_1
-//  Version 0.4
-//  Changed arrays to a more efficient method
+//
+//  Version 1.0.1 - 29/10/19
+//  Now the program uses sgets alongside sscanf to read in inputs instead of fscanf.
+//
+//  Version 1.0 - 29/10/19
+//  All assigned tasks work as sepcified, however still using fscanf to read in files and only the simplest test cases for errors.
+//
+//
 //  Created by George Jerman on 14/10/2019.
-//  General command line argument code taken from mat_gen.c from C.D.H.Williams and adapted.
+//  General command line argument code taken from https://vle.exeter.ac.uk/mod/resource/view.php?id=961497
+//  Author: C.D.H.Williams and adapted by George Jerman for use in this project under Public Domain
+//
+//  Code snippet for measuring the time a function takes to run taken from https://stackoverflow.com/questions/10192903/time-in-milliseconds-in-c 
+//
 //
 
 #include <stdio.h>
@@ -87,6 +97,11 @@ int main(int argc, char ** argv)
                 matrix1_size(matrix_1, &rows, &columns);
                 double *mat1=CreateArray1(rows, columns);
                 mat1 =Populate_mat1(mat1, matrix_1, rows, columns);
+                //print out the command used to create the file at the top of the output.
+                printf( "# ");
+                for ( int arg_no = 0; arg_no  <argc; arg_no++ ){
+                    printf("%s ", argv[arg_no]);
+                }
 
                 break;
             case 'x': //when file2 is specified creates an array from the data in input file specified
@@ -268,28 +283,16 @@ static double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns )
                 exit(BAD_ARGS);
             }
         }
-        /*else{
-            for (i=0; i<rows; i++) {
-                for (j=0; j<columns; j++) {
-                    f = sscanf(string_buffer, "%lg", &mat1[i*columns+j]);
-                    if (f != 1) {
-                        exit(BAD_FORMAT);
-                    }
-                   // printf("%.13lg\t", mat1[i*columns+j]);
-                }
-            //printf("\n");
-            }
-        }*/
     }
+    int temp = 0, count = 0;
     for (i=0; i<rows; i++) {
+        fgets(string_buffer, MAX_LINE_LENGTH, matrix_1);
         for (j=0; j<columns; j++) {
-            f = fscanf(matrix_1, "%lg", &mat1[i*columns+j]);
-            if (f != 1) {
-                exit(BAD_FORMAT);
-            }
-           // printf("%.13lg\t", mat1[i*columns+j]);
+            sscanf(&string_buffer[count], "%lg %n", &mat1[i*columns+j], &temp);
+            printf("%lg\n", mat1[i*columns+j]);
+            count += temp;
         }
-    //printf("\n");
+        count = temp =0;
     }
     fclose(matrix_1);
     return mat1;
@@ -319,15 +322,14 @@ static double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2
             }
         }
     }
+    int temp = 0, count = 0;
     for (i=0; i<rows2; i++) {
+        fgets(string_buffer, MAX_LINE_LENGTH, matrix_2);
         for (j=0; j<columns2; j++) {
-            f = fscanf(matrix_2, "%lg", &mat2[i*columns2+j]);
-            if (f != 1) {
-                exit(BAD_FORMAT);
-            }
-            //printf("%.13g\t", mat2[i*columns2+j]);
+            sscanf(&string_buffer[count], "%lg %n", &mat2[i*columns2+j], &temp);
+            count += temp;
         }
-        //printf("\n");
+        count = temp =0;
     }
     fclose(matrix_2);
     return mat2;
@@ -343,6 +345,7 @@ static Error print_matrix(double *mat , int r, int c)
         }
         printf("\n");
     }
+    printf("end\n");
     return NO_ERROR;
 }
 
@@ -385,7 +388,6 @@ static double* transpose(double *mat1, int rows, int columns)
 
 static Error matrix_product(double *mat1, double* mat2, int rows, int columns, int rows2, int columns2)
 {
-    FILE * destination =fopen("output.txt", "w");
     //chcking if multiplication is possible
     if (columns != rows2) {
         exit(INCOMPATIBLE_MATRICES);
@@ -404,14 +406,11 @@ static Error matrix_product(double *mat1, double* mat2, int rows, int columns, i
     printf("\n");
     print_matrix(mat_multiplied, rows, columns2);
     free(mat_multiplied);
-
-    fclose(destination);
     return 0;
 }
 
 static double determinant(double * mat1, int size)
 {
-    //print_matrix(mat1, size, size);
     double det=0;
     if (size == 1) {
         det = mat1[0];
@@ -438,8 +437,6 @@ static double determinant(double * mat1, int size)
                     ignore_col++;
                 }
             }
-            //print_matrix(cofactor_matrix, size-1, size-1);
-            //printf("\n");
             det += determinant(cofactor_matrix, size-1) * mat1[0*size+top_row] * pow(-1, top_row);
         }
         free(cofactor_matrix);
@@ -451,11 +448,9 @@ static double* adjoint(double * input_matrix, int size)
     int rows,cols,sign=1;
     int ignore_col,ignore_row;
     int i,j;
-    //double det =0;
     double * matrix_of_minors = malloc(sizeof(double)*size*size);
     double * cofactor_matrix = malloc(sizeof(double)*(size-1)*(size-1));
     for(rows=0; rows<size; rows++){ //for rows and cols in main matrix
-        //ignore_row=0;
         for (cols=0; cols<size; cols++) {
             ignore_row=0;
             ignore_col=0;
@@ -474,25 +469,28 @@ static double* adjoint(double * input_matrix, int size)
                     }
                 }
             }
-            //print_matrix(cofactor_matrix, size-1, size-1);
-            //printf("\n");
             matrix_of_minors[rows*size+cols] = determinant(cofactor_matrix, size-1) *sign;
             sign *=-1;
         }
     }
-    //printf("\n");
-    //print_matrix(matrix_of_minors, size, size);
     matrix_of_minors = transpose(matrix_of_minors, size, size);
     return matrix_of_minors;
 }
 
 static Error inverse(double * input_matrix, int size)
 {
+    if (size ==1){
+        printf("\n");
+        printf("matrix %d %d\n", size, size);
+        printf("%.18lg\n",(1/input_matrix[0]));
+        printf("end\n");
+        return NO_ERROR;
+    }
+    
     double * inverse_matrix = malloc(sizeof(double)*size*size);
     int i,j;
     double det = determinant(input_matrix, size);
     double * adjoint_matrix = adjoint(input_matrix, size);
-    //print_matrix(adjoint_matrix, size, size);
     for (i=0; i<size; i++) {
         for (j=0; j<size; j++) {
             inverse_matrix[i*size+j] = (1/det) * adjoint_matrix[i*size+j];
