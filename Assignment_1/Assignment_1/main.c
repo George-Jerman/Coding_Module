@@ -13,6 +13,7 @@
 #include <math.h>
 #include <string.h>
 #include <math.h>
+#include <sys/time.h>
 
 #define MAX_LINE_LENGTH 10000
 
@@ -30,21 +31,21 @@ typedef enum {
     UNKNOWN_ERROR = -1
 } Error;
 
+struct timespec start, end;
 
 static void matrix1_size(FILE * matrix_1, int *rows, int *columns);
 static void matrix2_size(FILE * matrix_2, int *rows2, int *columns2);
-double* CreateArray1(int rows, int columns);
-double* CreateArray2(int rows2, int columns2);
-double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns);
-double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2);
+static double* CreateArray1(int rows, int columns);
+static double* CreateArray2(int rows2, int columns2);
+static double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns);
+static double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2);
 static Error print_matrix(double *mat , int r, int c);
 static Error frobenius_norm(double* mat1, int rows, int columns);
-static Error transpose(double* mat1, int columns, int rows);
+static double* transpose(double* mat1, int columns, int rows);
 static Error matrix_product(double *mat1, double* mat2, int rows, int columns, int rows2, int columns2);
-static double determinant(double * mat1, int rank);
-static Error adjoint(void);
-static Error inverse(void);
-
+static double determinant(double * mat1, int size);
+static double* adjoint(double * input_matrix, int size);
+static Error inverse(double * input_matrix, int size);
 
 int main(int argc, char ** argv)
 {
@@ -52,7 +53,7 @@ int main(int argc, char ** argv)
     char * input_file_name_1 = NULL;
     char * input_file_name_2 = NULL;
     
-    int rows = 0, columns = 0, rows2 = 0, columns2= 0, rank =0;
+    int rows = 0, columns = 0, rows2 = 0, columns2= 0, size =0;
     FILE *matrix_1;
     FILE *matrix_2;
     
@@ -72,7 +73,7 @@ int main(int argc, char ** argv)
     /* getopt_long needs somewhere to store its option index. */
     int option_index = 0;
         
-    int c = getopt_long( argc, argv, ":z:x:ftmda:i:", long_options, &option_index );
+    int c = getopt_long( argc, argv, ":z:x:ftmdai", long_options, &option_index );
     /* End of options is signalled with '-1' */
     while (c != -1) {
         switch (c) {
@@ -108,7 +109,16 @@ int main(int argc, char ** argv)
 
                 break;
             case 't':
-                return transpose(mat1, rows, columns);
+                if (mat1) {
+                    double *mat_transpose = transpose(mat1, rows, columns);
+                    print_matrix(mat_transpose, rows, columns);
+                    free(mat_transpose);
+                    return NO_ERROR;
+                }
+                else{
+                    return BAD_FILENAME;
+                }
+
                 break;
             case 'm':
                 matrix_product(mat1, mat2, rows, rows2, columns, columns2);
@@ -121,17 +131,28 @@ int main(int argc, char ** argv)
                 }
                 else
                 {
-                    rank = rows;
-                    double answer =determinant(mat1, rank);
+                    size = rows;
+                    double answer =determinant(mat1, size);
                     printf("%lg\n",answer);
                 }
                 
                 break;
             case 'a':
-                ret_val = adjoint();
+                if (rows != columns) {
+                    return BAD_FORMAT;
+                }
+                else
+                {
+                    size = rows;
+                    double * adjoint_matrix = malloc(sizeof(double)*size*size);
+                    adjoint_matrix = adjoint(mat1, size);
+                    print_matrix(adjoint_matrix, size, size);
+                    return 0;
+                }
+                
                 break;
             case 'i':
-                ret_val = inverse();
+                ret_val = inverse(mat1, rows);
                 break;
             case ':':
                 /* missing option argument */
@@ -144,7 +165,7 @@ int main(int argc, char ** argv)
                 fprintf(stderr, "Warning: option '-%c' is invalid: ignored\n", optopt);
                 break;
         }
-        c = getopt_long( argc, argv, ":z:x:ftmda:i:", long_options, &option_index );
+        c = getopt_long( argc, argv, ":z:x:ftmdai", long_options, &option_index );
     }
     return NO_ERROR;
 }
@@ -212,19 +233,19 @@ static void matrix2_size(FILE * matrix_2, int *rows2, int *columns2)
     fseek(matrix_2, 0, SEEK_SET);
 }
 
-double* CreateArray1(int rows, int columns)
+static double* CreateArray1(int rows, int columns)
 {
     double *mat1 = malloc(sizeof(double)*rows*columns);
     return mat1;
 }
 
-double* CreateArray2(int rows2, int columns2)
+static double* CreateArray2(int rows2, int columns2)
 {
     double *mat2 = malloc(sizeof(double)*rows2*columns2);
     return mat2;
 }
 
-double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns )
+static double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns )
 {
     int i,j,f;
     
@@ -274,7 +295,7 @@ double* Populate_mat1(double* mat1, FILE *matrix_1,int rows,int columns )
     return mat1;
 }
 
-double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2)
+static double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2)
 {
     int i,j,f;
     
@@ -315,6 +336,7 @@ double* Populate_mat2(double* mat2, FILE *matrix_2,int rows2,int columns2)
 static Error print_matrix(double *mat , int r, int c)
 {
     int i,j;
+    printf("matrix %d %d\n", r, c);
     for (i=0; i<r; i++) {
         for (j=0; j<c; j++) {
             printf("%.18lg\t", mat[i*c+j]);
@@ -326,6 +348,7 @@ static Error print_matrix(double *mat , int r, int c)
 
 static Error frobenius_norm(double * mat1, int rows, int columns)
 {
+    clock_gettime(_CLOCK_MONOTONIC_RAW, &start);
     int i,j;
     double element=0,sum=0;
     for (i=0; i<rows; i++) {
@@ -337,10 +360,14 @@ static Error frobenius_norm(double * mat1, int rows, int columns)
     sum = sqrt(sum);
     printf("The frobenius norm of the matrix is: %.13lg\n", sum);
     free(mat1);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+    double time = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec -start.tv_nsec) / 1000;
+    time = time/100000;
+    printf("Time taken: %.6lg seconds\n", time);
     return NO_ERROR;
 }
 
-static Error transpose(double *mat1, int rows, int columns)
+static double* transpose(double *mat1, int rows, int columns)
 {
     printf("\n");
     int i,j;
@@ -353,9 +380,7 @@ static Error transpose(double *mat1, int rows, int columns)
         }
     }
     free(mat1);
-    print_matrix(mat_Transpose, columns, rows);
-    free(mat_Transpose);
-    return NO_ERROR;
+    return mat_Transpose;
 }
 
 static Error matrix_product(double *mat1, double* mat2, int rows, int columns, int rows2, int columns2)
@@ -384,17 +409,17 @@ static Error matrix_product(double *mat1, double* mat2, int rows, int columns, i
     return 0;
 }
 
-static double determinant(double * mat1, int rank)
+static double determinant(double * mat1, int size)
 {
-    //print_matrix(mat1, rank, rank);
+    //print_matrix(mat1, size, size);
     double det=0;
-    if (rank == 1) {
+    if (size == 1) {
         det = mat1[0];
         return det;
     }
-    else if (rank == 2)
+    else if (size == 2)
     {
-        det = (mat1[0*rank+0] * mat1[(1*rank) +1]) - (mat1[1*rank +0] * mat1[0*rank+1]);
+        det = (mat1[0*size+0] * mat1[(1*size) +1]) - (mat1[1*size +0] * mat1[0*size+1]);
         return det;
     }
     else
@@ -403,28 +428,76 @@ static double determinant(double * mat1, int rank)
         int i,j;
         int ignore_col;
         det = 0;
-        double * cofactor_matrix = malloc(sizeof(double)*(rank-1)*(rank-1));
-        for(top_row=0; top_row<rank; top_row++){//top row of matrix
-            for (i=0; i<rank-1; i++) {//rows of cofactor matrix
+        double * cofactor_matrix = malloc(sizeof(double)*(size-1)*(size-1));
+        for(top_row=0; top_row<size; top_row++){//top row of matrix
+            for (i=0; i<size-1; i++) {//rows of cofactor matrix
                 ignore_col=0; //current column to be skipped
-                for (j=0; j<rank; j++) {//columns of cofactor matrix
+                for (j=0; j<size; j++) {//columns of cofactor matrix
                     if (j ==top_row) continue; //determines whether to skip a column or not
-                    cofactor_matrix[(i)*(rank-1)+ignore_col] = mat1[(i+1)*rank+j];
+                    cofactor_matrix[(i)*(size-1)+ignore_col] = mat1[(i+1)*size+j];
                     ignore_col++;
                 }
             }
-            det += determinant(cofactor_matrix, rank-1) * mat1[0*rank+top_row] * pow(-1, top_row);
+            //print_matrix(cofactor_matrix, size-1, size-1);
+            //printf("\n");
+            det += determinant(cofactor_matrix, size-1) * mat1[0*size+top_row] * pow(-1, top_row);
         }
         free(cofactor_matrix);
     }
     return det;
 }
-static Error adjoint(void)
+static double* adjoint(double * input_matrix, int size)
 {
-    return NO_ERROR;
+    int rows,cols,sign=1;
+    int ignore_col,ignore_row;
+    int i,j;
+    //double det =0;
+    double * matrix_of_minors = malloc(sizeof(double)*size*size);
+    double * cofactor_matrix = malloc(sizeof(double)*(size-1)*(size-1));
+    for(rows=0; rows<size; rows++){ //for rows and cols in main matrix
+        //ignore_row=0;
+        for (cols=0; cols<size; cols++) {
+            ignore_row=0;
+            ignore_col=0;
+            for (i=0; i<size; i++){
+                if (i == rows) continue;//current column to be skipped
+                for (j=0; j<size; j++) {//columns of cofactor matrix
+                    if (i != rows && j != cols){
+                        cofactor_matrix[ignore_row*(size-1)+ignore_col] = input_matrix[i*size+j];
+                        if (ignore_col<(size-2)) {
+                            ignore_col++;
+                        }
+                        else{
+                            ignore_col=0;
+                            ignore_row++;
+                        }
+                    }
+                }
+            }
+            //print_matrix(cofactor_matrix, size-1, size-1);
+            //printf("\n");
+            matrix_of_minors[rows*size+cols] = determinant(cofactor_matrix, size-1) *sign;
+            sign *=-1;
+        }
+    }
+    //printf("\n");
+    //print_matrix(matrix_of_minors, size, size);
+    matrix_of_minors = transpose(matrix_of_minors, size, size);
+    return matrix_of_minors;
 }
 
-static Error inverse(void)
+static Error inverse(double * input_matrix, int size)
 {
+    double * inverse_matrix = malloc(sizeof(double)*size*size);
+    int i,j;
+    double det = determinant(input_matrix, size);
+    double * adjoint_matrix = adjoint(input_matrix, size);
+    //print_matrix(adjoint_matrix, size, size);
+    for (i=0; i<size; i++) {
+        for (j=0; j<size; j++) {
+            inverse_matrix[i*size+j] = (1/det) * adjoint_matrix[i*size+j];
+        }
+    }
+    print_matrix(inverse_matrix, size, size);
     return NO_ERROR;
 }
