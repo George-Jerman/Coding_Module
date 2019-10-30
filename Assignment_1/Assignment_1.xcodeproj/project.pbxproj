@@ -32,7 +32,6 @@
 		5E073574235EF4770082EB5E /* mat1.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1.txt; path = Resources/mat1.txt; sourceTree = SOURCE_ROOT; };
 		5E073575235EF4770082EB5E /* mat1_400_300.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_400_300.txt; path = Resources/mat1_400_300.txt; sourceTree = SOURCE_ROOT; };
 		5E073576235EF4770082EB5E /* mat1bigfn.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1bigfn.txt; path = Resources/mat1bigfn.txt; sourceTree = SOURCE_ROOT; };
-		5E073577235EF4770082EB5E /* mat1_40000_30000.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_40000_30000.txt; path = Resources/mat1_40000_30000.txt; sourceTree = SOURCE_ROOT; };
 		5E073578235EF4770082EB5E /* mat1_4000_3000.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_4000_3000.txt; path = Resources/mat1_4000_3000.txt; sourceTree = SOURCE_ROOT; };
 		5E073579235EF4770082EB5E /* mat1_4_3.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1_4_3.txt; path = Resources/mat1_4_3.txt; sourceTree = SOURCE_ROOT; };
 		5E07357A235EF4770082EB5E /* mat1bigf.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mat1bigf.txt; path = Resources/mat1bigf.txt; sourceTree = SOURCE_ROOT; };
@@ -83,7 +82,6 @@
 				5E073579235EF4770082EB5E /* mat1_4_3.txt */,
 				5E073575235EF4770082EB5E /* mat1_400_300.txt */,
 				5E073578235EF4770082EB5E /* mat1_4000_3000.txt */,
-				5E073577235EF4770082EB5E /* mat1_40000_30000.txt */,
 				5E073574235EF4770082EB5E /* mat1.txt */,
 				5E07356E235EE9DE0082EB5E /* mat1big.txt */,
 				5E07356F235EE9DE0082EB5E /* mat2big.txt */,
