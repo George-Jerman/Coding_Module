@@ -1,0 +1,2 @@
+To do
+dont use fscanf to read in data, use fgets and sscanf (mat_gen as example)

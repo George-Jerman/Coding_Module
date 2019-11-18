@@ -1,0 +1,8 @@
+# ./mat_gen --rows 4 --cols 3 
+# Version = 1.0.2, Revision date = 15-Oct-2019
+matrix 4 3
+1	1	1	
+2	2	2	
+1	1	1	
+2	2	2
+end
