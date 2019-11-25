@@ -1,5 +1,5 @@
 //
-//  main.c
+//  George_Jerman_Assignment1.c
 //  Assignment_1
 //
 //  Version 1.0.3 - 30/10/19
@@ -69,7 +69,7 @@
 
 #define MAX_LINE_LENGTH 1000000
 
-
+struct timespec start, end;
 /* Constants for signalling errors: */
 
 typedef enum {
@@ -213,7 +213,11 @@ int main(int argc, char ** argv)
                 }
                 break;
             case 'i':
+                clock_gettime(CLOCK_MONOTONIC_RAW, &start);
                  inverse(mat1, rows);
+                clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+                uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+                printf("%llu", delta_us);
                 break;
             case ':':
                 /* missing option argument */
