@@ -81,7 +81,7 @@ int main(int argc, char ** argv) {
     //printf("%d", ((array_size+(10))%array_size)*array_size+((array_size+(6))%array_size));
     gsl_rng_free(random_num_gen_struct);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+    u_int64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
     printf("%llu\n", delta_us);
     return 0;
 }
