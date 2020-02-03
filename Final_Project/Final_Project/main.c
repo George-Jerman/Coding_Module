@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <gsl/gsl_rng.h>
 #include <time.h>
+#include <assert.h>
 
 /*---------definitions-----------*/
 #define BASE_10 10
@@ -22,8 +23,9 @@
 #define K_B 1.380649e-23 /*unita od J/K*/
 #define xfree(mem) { free( mem ); mem = NULL; } //checks if free is successful
 #define S(i,j) (spin[((Quantities->array_size+(i))%Quantities->array_size)*Quantities->array_size+((Quantities->array_size+(j))%Quantities->array_size)]) /* Makes referring to the array simpler and also deals
-                                                                                                with the periodic BCs required to simulate an infinite lattice
-                                                                                                i.e this means that the N * N array element wraps around to the 0th element*/
+                                    with the periodic BCs required to simulate an infinite lattice
+                                    i.e this means that the N * N array element wraps around to the 0th
+                                    element*/
 
 typedef enum {
     NO_ERROR = 0,
@@ -36,13 +38,16 @@ typedef enum {
     BAD_MALLOC = 100
 } Error;
 
+//put the user specifed constants as well as energy in this struct to minimise
+//number of variables to pass to the functions
 typedef struct Quantities {
     double J;
     double B;
     double temperature;
-    double total_energy;
+    long double total_energy;
     double delta_e;
     int array_size;
+    long number_of_iterations;
 } quantities;
 
 
@@ -50,40 +55,43 @@ typedef struct Quantities {
 static void * xmalloc(size_t bytes);
 static Error get_double_arg( double *value, const char *opt_name, char *optarg);
 static int checked_strtoi(const char *string);
+static long checked_strtol(const char *string);
 static Error populate_array(int *spin, quantities * Quantities, gsl_rng *r);
 static double calculate_energy (int *spin, quantities * Quantities);
 static double calculate_energy_change (int *spin, quantities * Quantities, unsigned long i, unsigned long j);
 static Error metropolis_implementation (int *spin, quantities * Quantities, gsl_rng * rng_struct);
 
 int main(int argc, char ** argv) {
-    
+
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    
-    
+
+
     static struct option long_options[] = {
     /* These options don’t set a flag the are edistinguished by their indices. */
     {"matrix_size", required_argument,  0, 'd'},
     {"J", required_argument, 0, 'j'},
     {"B", required_argument, 0, 'b'},
     {"Temperature", required_argument, 0, 't'},
+    {"Iterations", required_argument, 0, 'i'},
     {0, 0, 0, 0}
     };
     //tells the program to use the mersenne twister rng algorithm.
     gsl_rng * random_num_gen_struct = gsl_rng_alloc(gsl_rng_mt19937);
-    gsl_rng_set(random_num_gen_struct, clock()); // randomises the seed every time the code is run
-    
-    quantities * Quantities = xmalloc(sizeof(Quantities));
+    gsl_rng_set(random_num_gen_struct, clock()); // sets the seed to the clock meaning the random numbers will be different every time the code is run
+
+    quantities * Quantities = xmalloc(sizeof(quantities));
     Quantities->J=0;
     Quantities->B=0;
     Quantities->temperature=0;
     Quantities->total_energy=0;
     Quantities->delta_e=0;
     Quantities->array_size=0;
-    
+    Quantities->number_of_iterations=0;
+
     int ret_val = 0;
     int option_index = 0;
-    int c = getopt_long( argc, argv, ":d:j:b:t:", long_options, &option_index );
+    int c = getopt_long( argc, argv, ":d:j:b:t:i:", long_options, &option_index );
     /* End of options is signalled with '-1' */
     while (c != -1) {
         switch (c) {
@@ -100,6 +108,9 @@ int main(int argc, char ** argv) {
             case 't':
                 ret_val = get_double_arg(&Quantities->temperature, long_options[option_index].name, optarg);
                 break;
+            case 'i':
+                Quantities->number_of_iterations = checked_strtol(optarg);
+                break;
             case ':':
                 /* missing option argument */
                 fprintf(stderr, "Error: option '-%c' requires an argument\n", optopt);
@@ -110,13 +121,13 @@ int main(int argc, char ** argv) {
                 fprintf(stderr, "Warning: option '-%c' is invalid: ignored\n", optopt);
                 break;
         }
-        c = getopt_long( argc, argv, ":d:j:b:t:", long_options, &option_index );
+        c = getopt_long( argc, argv, ":d:j:b:t:i:", long_options, &option_index );
     }
     int *spin = xmalloc(sizeof(int)*Quantities->array_size*Quantities->array_size);
     populate_array(spin, Quantities, random_num_gen_struct);
-    
+
     Quantities->total_energy = calculate_energy(spin, Quantities);
-    
+
     metropolis_implementation(spin, Quantities, random_num_gen_struct);
     FILE * final = fopen("final_array.txt", "w");
     if (final == NULL) {
@@ -129,14 +140,16 @@ int main(int argc, char ** argv) {
         }
         fprintf(final, "\n");
     }
-    
+    printf("Energy is : %.18Lg\n", Quantities->total_energy);
+    fclose(final);
     xfree(spin);
-    
+    xfree(Quantities);
+
     gsl_rng_free(random_num_gen_struct);
-    
+
     //gets and prints the total runtime
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    u_int64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+    unsigned long long int delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
     printf("%llu\n", delta_us);
     return 0;
 }
@@ -170,7 +183,19 @@ static int checked_strtoi(const char *string){
         exit(BAD_ARGS);
     }
     return (int) temp_long;
-    
+
+}
+
+static long checked_strtol(const char *string){
+    char * endptr;
+    errno = 0;
+    unsigned long temp_long = strtoul(string, &endptr, BASE_10);
+    if (errno == ERANGE || *endptr != '\0' || string == endptr) {
+        printf("input dimension size is not an integer\n");
+        exit(BAD_ARGS);
+    }
+    return (long) temp_long;
+
 }
 
 //randomly populates the array using the Mersenne Twister rng
@@ -215,26 +240,49 @@ static double calculate_energy_change (int *spin, quantities * Quantities, unsig
 }
 
 static Error metropolis_implementation (int *spin, quantities * Quantities, gsl_rng * rng_struct){
-    unsigned long i=0, j=0;
+    unsigned long i=0, j=0, x=0;
     int count =0;
+    long double new_energy_val=0;
+    long double energy_change=0;
     double random=0;
-    while (count<2*(pow(Quantities->array_size, 2))) {
-        if (count%50 == 0) {
+    FILE * energy = fopen("energy_fluctuations.txt", "w");
+    if (energy == NULL) {
+           printf("Error opening file\n");
+           exit(BAD_FILE_OPEN);
+       }
+    while (count<Quantities->number_of_iterations) {
+
+        if (count%10 == 0) {
             Quantities->total_energy = calculate_energy(spin, Quantities);
         }
-        i = gsl_rng_uniform_int(rng_struct, Quantities->array_size);
-        j = gsl_rng_uniform_int(rng_struct, Quantities->array_size);
-        Quantities->delta_e = calculate_energy_change(spin, Quantities, i, j);
-        if (Quantities->delta_e <= 0.0) {
-            S(i,j) = -S(i, j);
-        }
-        else{
-            random = gsl_rng_uniform(rng_struct);
-            if (random < exp(-(Quantities->delta_e)/(K_B * Quantities->temperature))) {
-                S(i, j) = -S(i, j);
+        for (x=0; x<Quantities->array_size*Quantities->array_size; x++) {
+            i = gsl_rng_uniform_int(rng_struct, Quantities->array_size);
+            j = gsl_rng_uniform_int(rng_struct, Quantities->array_size);
+            Quantities->delta_e = calculate_energy_change(spin, Quantities, i, j);
+            if (Quantities->delta_e <= 0.0) {
+                S(i,j) = -S(i, j);
+            }
+            else{
+                random = gsl_rng_uniform(rng_struct);
+                if (random < exp(-(Quantities->delta_e)/(K_B * Quantities->temperature))) {
+                    S(i, j) = -S(i, j);
+                }
             }
         }
+        if (count%10 == 0) {
+            new_energy_val = calculate_energy(spin, Quantities);
+            energy_change = new_energy_val - Quantities->total_energy;
+            int f = fprintf(energy, "At step %d energy fluctuation is: %.18Lg\n", count, energy_change);
+            printf("f = %d\n", f);
+            if (f <= 0){
+                exit(1);
+            }
+            printf("At step %d energy fluctuation is: %.18Lg\n", count, energy_change);
+            printf("Here\n");
+        }
         count++;
+        printf("%d\n", count);
     }
+    fclose(energy);
     return NO_ERROR;
 }
