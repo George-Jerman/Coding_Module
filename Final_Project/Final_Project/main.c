@@ -5,6 +5,30 @@
 //  Created by George Jerman on 14/01/2020.
 //  Copyright © 2020 George Jerman. All rights reserved.
 //
+/*
+ ------------------------Manual---------------------------------
+ This program simulates the Ising model of ferromsgnetism.
+ The program takes several required command line arguments.
+ These are:
+ -d the dimension of the array to be used
+ -j the spin spin exchange interaction (for iron J/K_b = 17.4)
+ -t the Temperature of the system
+ -b the magnetic field strength
+ -i the nunber of iterations to be ran
+ 
+ sample command that I've been using is:
+ ./a.out -d 1000 -t 100 -b 0 -j 2.4e-12  -i 100
+ 
+ The files that are written by the program are as follows:
+ intial_array.txt which holds the randomly generated array at the beginning of the simulaiton
+ final_array.txt which is the array of spins once the simulation has completed
+ energy_fluctuations.txt which shows the change in total energy between every ten steps
+ 
+ The progran also will print out the current iteration to the console as well as a runtime at the end of the program.
+ 
+ */
+
+
 
 /*---------includes-------*/
 #include <stdio.h>
@@ -19,6 +43,7 @@
 
 /*---------definitions-----------*/
 #define BASE_10 10
+#define SAMPLE_RANGE 10
 #define MU_0 1.25663706212e-6 /*units of H/m*/
 #define K_B 1.380649e-23 /*unita od J/K*/
 #define xfree(mem) { free( mem ); mem = NULL; } //checks if free is successful
@@ -45,9 +70,18 @@ typedef struct Quantities {
     double B;
     double temperature;
     long double total_energy;
+    double magnetisation;
     double delta_e;
     int array_size;
     long number_of_iterations;
+    double avg_energy[SAMPLE_RANGE];
+    double current_avg_energy;
+    double current_avg_energy_squared;
+    double avg_energy_squared[SAMPLE_RANGE];
+    double avg_magnetisation[SAMPLE_RANGE];
+    double avg_magnetistion_squared[SAMPLE_RANGE];
+    double current_avg_magnetisation;
+    double current_avg_magnetisation_squared;
 } quantities;
 
 
@@ -60,6 +94,11 @@ static Error populate_array(int *spin, quantities * Quantities, gsl_rng *r);
 static double calculate_energy (int *spin, quantities * Quantities);
 static double calculate_energy_change (int *spin, quantities * Quantities, unsigned long i, unsigned long j);
 static Error metropolis_implementation (int *spin, quantities * Quantities, gsl_rng * rng_struct);
+static Error calculate_average_energy (quantities * Quantities, int rolling_count, int count);
+static Error calculate_heat_capacity(quantities * Quantities);
+static double calculate_magnetisation(int *spin, quantities * Quantities);
+static Error calculate_average_magnetisation(quantities * Quantities, int rolling_count, int count);
+static Error calculate_susceptibility(quantities * Quantities);
 
 int main(int argc, char ** argv) {
 
@@ -80,15 +119,21 @@ int main(int argc, char ** argv) {
     gsl_rng * random_num_gen_struct = gsl_rng_alloc(gsl_rng_mt19937);
     gsl_rng_set(random_num_gen_struct, clock()); // sets the seed to the clock meaning the random numbers will be different every time the code is run
 
+    
+    //creating the strucutre and setting all values initially to = 0
     quantities * Quantities = xmalloc(sizeof(quantities));
     Quantities->J=0;
     Quantities->B=0;
     Quantities->temperature=0;
     Quantities->total_energy=0;
+    Quantities->magnetisation=0;
     Quantities->delta_e=0;
     Quantities->array_size=0;
     Quantities->number_of_iterations=0;
-
+    memset(Quantities->avg_energy, 0, SAMPLE_RANGE*sizeof(double));
+    memset(Quantities->avg_energy_squared, 0, SAMPLE_RANGE*sizeof(double));
+    memset(Quantities->avg_magnetisation, 0, SAMPLE_RANGE*sizeof(double));
+    memset(Quantities->avg_magnetistion_squared, 0, SAMPLE_RANGE*sizeof(double));
     int ret_val = 0;
     int option_index = 0;
     int c = getopt_long( argc, argv, ":d:j:b:t:i:", long_options, &option_index );
@@ -200,8 +245,8 @@ static long checked_strtol(const char *string){
 
 //randomly populates the array using the Mersenne Twister rng
 static Error populate_array(int *spin,  quantities * Quantities, gsl_rng *random_num_gen_struct){
-    FILE * output =fopen("output.txt", "w");
-    if (output == NULL){
+    FILE * initial =fopen("intial_array.txt", "w");
+    if (initial == NULL){
         printf("File failed to open\n");
         exit(BAD_FILE_OPEN);
     }
@@ -216,11 +261,11 @@ static Error populate_array(int *spin,  quantities * Quantities, gsl_rng *random
             else{
                 S(i,j) = -1;
             }
-            fprintf(output, "%d\t", S(i,j));
+            fprintf(initial, "%d\t", S(i,j));
         }
-        fprintf(output,"\n");
+        fprintf(initial,"\n");
     }
-    fclose(output);
+    fclose(initial);
     return NO_ERROR;
 }
 
@@ -228,7 +273,7 @@ static double calculate_energy (int *spin, quantities * Quantities){
     double Energy = 0;
     for (int i=0; i<Quantities->array_size; i++) {
         for (int j=0; j<Quantities->array_size; j++) {
-            Energy -= S(i,j)*( Quantities->J*(S(i+1,j)+S(i,j+1)) + MU_0*Quantities->B );
+            Energy -= (S(i,j)*( Quantities->J*(S(i+1,j)+S(i,j+1)) + MU_0*Quantities->B ));
         }
     }
     return Energy;
@@ -239,22 +284,33 @@ static double calculate_energy_change (int *spin, quantities * Quantities, unsig
     return delta_energy;
 }
 
+//This function implements the metropolis algorithm to evolve the system and also is responsible at present for
+// calculating the energy fluctuations at ten step intervals
 static Error metropolis_implementation (int *spin, quantities * Quantities, gsl_rng * rng_struct){
     unsigned long i=0, j=0, x=0;
+    int rolling_count =0;
     int count =0;
     long double new_energy_val=0;
     long double energy_change=0;
     double random=0;
-    FILE * energy = fopen("energy_fluctuations.txt", "w");
+    FILE * energy = fopen("energy_fluctuations_test.txt", "w");
     if (energy == NULL) {
            printf("Error opening file\n");
            exit(BAD_FILE_OPEN);
        }
     while (count<Quantities->number_of_iterations) {
 
-        if (count%10 == 0) {
-            Quantities->total_energy = calculate_energy(spin, Quantities);
+        //if (count%10 == 0) {
+        Quantities->total_energy = calculate_energy(spin, Quantities);
+        Quantities->magnetisation = calculate_magnetisation(spin, Quantities);
+        calculate_average_energy(Quantities, rolling_count, count);
+        calculate_average_magnetisation(Quantities, rolling_count, count);
+        rolling_count++;
+        if (rolling_count ==SAMPLE_RANGE) {
+            rolling_count =0;
         }
+        //}
+        //ensures that a random sample equal to the size of array is simulated
         for (x=0; x<Quantities->array_size*Quantities->array_size; x++) {
             i = gsl_rng_uniform_int(rng_struct, Quantities->array_size);
             j = gsl_rng_uniform_int(rng_struct, Quantities->array_size);
@@ -273,16 +329,79 @@ static Error metropolis_implementation (int *spin, quantities * Quantities, gsl_
             new_energy_val = calculate_energy(spin, Quantities);
             energy_change = new_energy_val - Quantities->total_energy;
             int f = fprintf(energy, "At step %d energy fluctuation is: %.18Lg\n", count, energy_change);
-            printf("f = %d\n", f);
-            if (f <= 0){
+            if (f <= 0){ //checks that the printing succeeds however at 1000*1000 array this returns in the region of 40 but no printing occurs
                 exit(1);
             }
-            printf("At step %d energy fluctuation is: %.18Lg\n", count, energy_change);
-            printf("Here\n");
+            printf("At step %d energy fluctuation is: %.18Lg\n", count, energy_change); //This statement works even at 1000*1000 array size
+            printf("At step %d the magnetisation is %.18lg\n", count, Quantities->magnetisation);
+            calculate_heat_capacity(Quantities);
+            calculate_susceptibility(Quantities);
         }
         count++;
         printf("%d\n", count);
     }
     fclose(energy);
+    return NO_ERROR;
+}
+//calculates a running average energy over the previous 10 energy values
+static Error calculate_average_energy (quantities * Quantities, int rolling_count, int count){
+    Quantities->avg_energy[rolling_count] = Quantities->total_energy;
+    Quantities->avg_energy_squared[rolling_count] = pow(Quantities->total_energy, 2);
+    if (count%10 == 0 && count != 0) {
+        double sum_energy=0;
+        double sum_energy_squared=0;
+        for (int i=0; i<SAMPLE_RANGE; i++) {
+            sum_energy += Quantities->avg_energy[i];
+            sum_energy_squared +=Quantities->avg_energy_squared[i];
+        }
+        
+        Quantities->current_avg_energy= sum_energy/SAMPLE_RANGE;
+        Quantities->current_avg_energy_squared= sum_energy_squared/SAMPLE_RANGE;
+        printf("avg energy is: %.18lg\n", Quantities->current_avg_energy);
+        printf("avg energy squared is %.18lg\n", Quantities->current_avg_energy_squared);
+    }
+
+    return NO_ERROR;
+}
+
+static Error calculate_heat_capacity(quantities * Quantities){
+    double heat_capacity = 1/(pow(Quantities->temperature,2)*K_B) *(Quantities->current_avg_energy_squared - pow(Quantities->current_avg_energy, 2));
+    printf("Heat_capacity = %.18lg\n", heat_capacity);
+    return NO_ERROR;
+}
+
+static double calculate_magnetisation(int *spin, quantities * Quantities){
+    double magnetisation =0;
+    for (int i =0; i<Quantities->array_size; i++) {
+        for (int j=0; j<Quantities->array_size; j++) {
+            magnetisation += S(i, j);
+        }
+    }
+    magnetisation = magnetisation/(Quantities->array_size*Quantities->array_size);
+    return magnetisation;
+}
+
+static Error calculate_average_magnetisation(quantities * Quantities, int rolling_count, int count){
+    Quantities->avg_magnetisation[rolling_count] = Quantities->magnetisation;
+    Quantities->avg_magnetistion_squared[rolling_count] = pow(Quantities->magnetisation, 2);
+    if (count%10 == 0 && count != 0) {
+        double sum_mag=0;
+        double sum_mag_squared=0;
+        for (int i=0; i<SAMPLE_RANGE; i++) {
+            sum_mag += Quantities->avg_magnetisation[i];
+            sum_mag_squared +=Quantities->avg_magnetistion_squared[i];
+        }
+        
+        Quantities->current_avg_magnetisation= sum_mag/SAMPLE_RANGE;
+        Quantities->current_avg_magnetisation_squared= sum_mag_squared/SAMPLE_RANGE;
+        printf("avg magnetisation is: %.18lg\n", Quantities->current_avg_magnetisation);
+        printf("avg magnetisation squared is %.18lg\n", Quantities->current_avg_magnetisation_squared);
+    }
+    return NO_ERROR;
+}
+
+static Error calculate_susceptibility(quantities * Quantities){
+    double susceptibility = 1/(K_B*Quantities->temperature) * (Quantities->current_avg_magnetisation_squared - pow(Quantities->current_avg_magnetisation, 2));
+    printf("susceptibility is %.18lg\n", susceptibility);
     return NO_ERROR;
 }

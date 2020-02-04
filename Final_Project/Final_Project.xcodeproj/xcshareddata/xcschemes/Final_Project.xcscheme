@@ -50,6 +50,12 @@
             ReferencedContainer = "container:Final_Project.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "-d 1000 -t 100 -b 0 -j 2.4e-12  -i 100"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
